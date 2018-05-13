@@ -4,7 +4,7 @@ function decreasingYCmp(a, b) {
 }
 
 function ySorted(points) {
-  return points.concat().sort(ySortCmp);
+  return points.concat().sort(decreasingYCmp);
 }
 
 // Javascript min/max doesn't take a custom comparator :(
@@ -61,7 +61,68 @@ function splitPolygonInChains(polygon) {
   };
 }
 
+// TODO: which chain do the top and bottom vertices belong to?
+function vertexToChain(polygon) {
+  const { leftChain, rightChain } = splitPolygonInChains(polygon);
+  const chainOfVertex = new Array(polygon.vertices.length);
+  for (let vertex of leftChain) chainOfVertex[vertex] = "l";
+  for (let vertex of rightChain) chainOfVertex[vertex] = "r";
+  return chainOfVertex;
+}
+
 function* triangulatePolygon(polygon) {
-  const S = [];
-  yield;
+  const u = ySorted(polygon.vertices);
+  const n = polygon.vertices.length;
+  const S = [0, 1];
+  const chainOf = vertexToChain(polygon);
+  console.log({ chainOf });
+
+  // TODO: how to verify that a line is actually a valid diagonal?
+  function diagonalInPolygon(from, to) {
+    console.log({ from, to });
+    const a = u[from].id,
+      b = u[to].id;
+    if (Math.abs(a - b) <= 1) return false;
+    if ((a === 1 && b == 4) || (a === 4 && b === 1)) return false;
+    if ((a === 0 && b == 4) || (a === 4 && b === 0)) return false;
+    if ((a === 0 && b == n - 1) || (a === n - 1 && b === 0)) return false;
+    if ((a === 0 && b == 2) || (a === 2 && b === 0)) return false;
+    if ((a === 5 && b == 8) || (a === 8 && b === 5)) return false;
+    return true;
+  }
+
+  for (let j = 2; j < n - 1; ++j) {
+    console.log(j, "" + S);
+    const head = S[S.length - 1];
+    if (chainOf[u[j].id] !== chainOf[u[head].id]) {
+      console.log("different chain");
+      while (S.length) {
+        const head = S.pop();
+        if (S.length === 0) break;
+        yield [u[j], u[head]];
+      }
+      S.push(j - 1);
+      S.push(j);
+    } else {
+      console.log("same chain");
+      let lastPopped = S.pop();
+      while (S.length) {
+        const head = S[S.length - 1];
+        console.log({ S, head });
+        if (!diagonalInPolygon(j, head)) break;
+        lastPopped = S.pop();
+        yield [u[j], u[head]];
+      }
+
+      S.push(lastPopped);
+      S.push(j);
+    }
+  }
+
+  S.pop();
+  while (S.length > 1) {
+    const head = S.pop();
+    yield [u[n - 1], u[head]];
+  }
+  console.log({ S });
 }
