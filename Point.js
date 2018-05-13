@@ -4,8 +4,8 @@ class Point {
     this.y = y;
   }
 
-  viewToModel() {
-    return new Point(this.x / SCALE, (H - this.y) / SCALE);
+  modelToView() {
+    return new Point(this.x * SCALE, H - this.y * 2);
   }
 
   equals(other) {
