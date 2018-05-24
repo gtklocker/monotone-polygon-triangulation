@@ -1,5 +1,5 @@
 let showLabels = true;
-const polygon = new Polygon([
+let polygon = new Polygon([
   p(200, 180),
   p(180, 190),
   p(165, 210),
@@ -11,7 +11,9 @@ const polygon = new Polygon([
   p(170, 140),
   p(130, 150)
 ]);
-const diagonals = [];
+let diagonals = [];
+let interval;
+let generator;
 
 function init() {
   console.log(`have ${polygon.vertices.length} vertices`);
@@ -59,19 +61,40 @@ function renderEdge(from, to) {
   ctx.stroke();
 }
 
-function lazyEval(gen, cb) {
-  setTimeout(() => {
-    const next = gen.next();
-    if (!next.done) {
-      cb(next.value);
-      lazyEval(gen, cb);
-    }
-  }, 250);
+function reset() {
+  done();
+  diagonals = [];
+  generator = triangulatePolygon(polygon);
+}
+
+function done() {
+  generator = undefined;
+  if (interval !== undefined) {
+    clearInterval(interval);
+    interval = undefined;
+  }
+}
+
+function step() {
+  if (generator !== undefined) {
+    const next = generator.next();
+    if (!next.done)
+      handleNewStep(next.value);
+    else
+      done();
+  }
+}
+
+function run() {
+  if (interval === undefined)
+    interval = setInterval(step, 250);
+}
+
+function handleNewStep(newDiagonal) {
+  console.log("new diagonal", newDiagonal);
+  diagonals.push(newDiagonal);
 }
 
 init();
 render();
-lazyEval(triangulatePolygon(polygon), newDiagonal => {
-  console.log("new diagonal", newDiagonal);
-  diagonals.push(newDiagonal);
-});
+reset();
