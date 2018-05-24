@@ -70,26 +70,16 @@ function vertexToChain(polygon) {
   return chainOfVertex;
 }
 
+function ccw(a, b, c) {
+  return a.x * b.y - a.y * b.x + a.y * c.x - a.x * c.y + b.x * c.y - b.y * c.x;
+}
+
 function* triangulatePolygon(polygon) {
   const u = ySorted(polygon.vertices);
   const n = polygon.vertices.length;
   const S = [0, 1];
   const chainOf = vertexToChain(polygon);
   console.log({ chainOf });
-
-  // TODO: how to verify that a line is actually a valid diagonal?
-  function diagonalInPolygon(from, to) {
-    console.log({ from, to });
-    const a = u[from].id,
-      b = u[to].id;
-    if (Math.abs(a - b) <= 1) return false;
-    if ((a === 1 && b == 4) || (a === 4 && b === 1)) return false;
-    if ((a === 0 && b == 4) || (a === 4 && b === 0)) return false;
-    if ((a === 0 && b == n - 1) || (a === n - 1 && b === 0)) return false;
-    if ((a === 0 && b == 2) || (a === 2 && b === 0)) return false;
-    if ((a === 5 && b == 8) || (a === 8 && b === 5)) return false;
-    return true;
-  }
 
   for (let j = 2; j < n - 1; ++j) {
     console.log(j, "" + S);
@@ -109,7 +99,10 @@ function* triangulatePolygon(polygon) {
       while (S.length) {
         const head = S[S.length - 1];
         console.log({ S, head });
-        if (!diagonalInPolygon(j, head)) break;
+
+        if (ccw(u[j], u[lastPopped], u[head]) <= 0)
+          break;
+
         lastPopped = S.pop();
         yield [u[j], u[head]];
       }
