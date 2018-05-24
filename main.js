@@ -1,19 +1,10 @@
 let showLabels = true;
-let polygon = new Polygon([
-  p(200, 180),
-  p(180, 190),
-  p(165, 210),
-  p(165, 235),
-  p(150, 250),
-  p(100, 170),
-  p(120, 120),
-  p(150, 100),
-  p(170, 140),
-  p(130, 150)
-]);
-let diagonals = [];
+let polygon = new Polygon([]);
+let triangles = [];
 let interval;
 let generator;
+let output = document.getElementById('output');
+let input = document.getElementById('input');
 
 function init() {
   console.log(`have ${polygon.vertices.length} vertices`);
@@ -23,7 +14,7 @@ function init() {
 function render() {
   ctx.clearRect(0, 0, W, H);
   renderPolygon(polygon);
-  diagonals.forEach(renderDiagonal);
+  triangles.forEach(renderTriangle);
   requestAnimationFrame(render);
 }
 
@@ -46,11 +37,14 @@ function renderLabel(label, point) {
   ctx.restore();
 }
 
-function renderDiagonal([a, b]) {
+function renderTriangle([a, b, c], i) {
   ctx.save();
-  ctx.setLineDash([3]);
-  ctx.strokeStyle = "red";
-  renderEdge(a, b);
+  ctx.fillStyle = 'hsl(' + (i / triangles.length) * 360.0 + ', 50%, 50%)';
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.lineTo(c.x, c.y);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -63,8 +57,10 @@ function renderEdge(from, to) {
 
 function reset() {
   done();
-  diagonals = [];
+  triangles = [];
+  setPolygonFromInput();
   generator = triangulatePolygon(polygon);
+  output.value = '';
 }
 
 function done() {
@@ -90,9 +86,22 @@ function run() {
     interval = setInterval(step, 250);
 }
 
-function handleNewStep(newDiagonal) {
-  console.log("new diagonal", newDiagonal);
-  diagonals.push(newDiagonal);
+function triangleToString(triangle) {
+  return triangle.map(vertex => vertex.x + ' ' + vertex.y).join(' | ');
+}
+
+function handleNewStep(newTriangle) {
+  console.log("new triangle", newTriangle);
+  triangles.push(newTriangle);
+  output.value += triangleToString(newTriangle) + '\n';
+}
+
+function setPolygonFromInput() {
+  const str = input.value.trim();
+  const lines = str.split('\n');
+  const n = parseFloat(lines[0]);
+  const vertices = lines.slice(1, n + 1).map(line => p(...line.split(' ').map(parseFloat)));
+  polygon = new Polygon(vertices);
 }
 
 init();

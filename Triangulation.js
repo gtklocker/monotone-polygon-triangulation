@@ -44,6 +44,36 @@ function* triangulatePolygon(polygon) {
   const chainOf = vertexToChain(polygon);
   console.log({ chainOf });
 
+  const vicinityOf = {};
+
+  function prev(idx) {
+    if (chainOf[idx] == "l") return idx - 1 >= 0 ? idx - 1 : n - 1;
+    if (chainOf[idx] == "r") return idx + 1 < n ? idx + 1 : 0;
+  }
+
+  function next(idx) {
+    if (chainOf[idx] == "r") return idx - 1 >= 0 ? idx - 1 : n - 1;
+    if (chainOf[idx] == "l") return idx + 1 < n ? idx + 1 : 0;
+  }
+
+  for (let i = 0; i < n; ++i) {
+    vicinityOf[i] = [prev(i), next(i)];
+  }
+
+  function vertexWithId(id) {
+    return polygon.vertices[id];
+  }
+
+  function* introduceDiagonal(a, b) {
+    vicinityOf[a.id].push(b.id);
+    vicinityOf[b.id].push(a.id);
+    const thirdWheels = _.intersection(vicinityOf[a.id], vicinityOf[b.id]);
+    for (let wheel of thirdWheels) {
+      const vertices = polygon.vertices;
+      yield [a.id, b.id, wheel].map(vertexWithId);
+    }
+  }
+
   for (let j = 2; j < n - 1; ++j) {
     console.log(j, "" + S);
     const head = S[S.length - 1];
@@ -52,7 +82,7 @@ function* triangulatePolygon(polygon) {
       while (S.length) {
         const head = S.pop();
         if (S.length === 0) break;
-        yield [u[j], u[head]];
+        yield* introduceDiagonal(u[j], u[head]);
       }
       S.push(j - 1);
       S.push(j);
@@ -67,7 +97,7 @@ function* triangulatePolygon(polygon) {
           break;
 
         lastPopped = S.pop();
-        yield [u[j], u[head]];
+        yield* introduceDiagonal(u[j], u[head]);
       }
 
       S.push(lastPopped);
@@ -78,7 +108,7 @@ function* triangulatePolygon(polygon) {
   S.pop();
   while (S.length > 1) {
     const head = S.pop();
-    yield [u[n - 1], u[head]];
+    yield* introduceDiagonal(u[n - 1], u[head]);
   }
   console.log({ S });
 }
